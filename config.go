@@ -6,43 +6,61 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const StdOut = "stdout"
+
 type LoggerConfiguration struct {
-	Level            Level    `yaml:"level"`
-	Development      bool     `yaml:"development"`
-	Encoding         Encoding `yaml:"encoding"`
-	OutputPaths      []string `yaml:"output_paths"`
-	ErrorOutputPaths []string `yaml:"error_output_paths"`
+	Level       Level     `yaml:"level"`
+	Development bool      `yaml:"development"`
+	Encoding    Encoding  `yaml:"encoding"`
+	OutputPath  string    `yaml:"output_path"`
+	Rotate      LogRotate `yaml:"rotate"`
 }
 
-func (config *LoggerConfiguration) Default() *LoggerConfiguration {
+type LogRotate struct {
+	MaxSizeMB  int  `yaml:"max_size_mb"`
+	MaxBackups int  `yaml:"max_backups"`
+	Compress   bool `yaml:"compress"`
+}
+
+func (config *LoggerConfiguration) Default() {
 	if config.Level == "" {
 		config.Level = "debug"
 	}
 	if config.Encoding == "" {
 		config.Encoding = TextEncoding
 	}
-	if len(config.OutputPaths) == 0 {
-		config.OutputPaths = []string{"stdout"}
+	if config.OutputPath == "" {
+		config.OutputPath = StdOut
 	}
-	if len(config.ErrorOutputPaths) == 0 {
-		config.ErrorOutputPaths = []string{"stdout"}
+
+	if config.Rotate.MaxSizeMB == 0 {
+		config.Rotate.MaxSizeMB = 1024
 	}
-	return config
+
+	if config.Rotate.MaxBackups == 0 {
+		config.Rotate.MaxBackups = 3
+		config.Rotate.Compress = true
+	}
+
 }
 
 func (config *LoggerConfiguration) Validate() error {
+	config.Default()
 	if _, ok := logLevelMap[config.Level]; !ok {
 		return errors.New("log level set error")
 	}
 	if config.Encoding != TextEncoding && config.Encoding != JsonEncoding {
 		return errors.New("log encoding format set error")
 	}
-	if len(config.OutputPaths) == 0 {
-		return errors.New("must set log output")
+
+	if config.Rotate.MaxSizeMB <= 0 {
+		return errors.New("log rotate maxsize must greater 0")
 	}
-	if len(config.ErrorOutputPaths) == 0 {
-		return errors.New("must set log err output")
+
+	if config.Rotate.MaxBackups <= 0 {
+		return errors.New("log rotate max backups must greater 0")
 	}
+
 	return nil
 }
 

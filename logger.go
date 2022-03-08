@@ -2,7 +2,6 @@ package zap_log_wrapper
 
 import (
 	"fmt"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -41,9 +40,9 @@ func init() {
 	}
 }
 */
-var callerSkip = 1
+var wrapperCallerSkip = 1
 
-var logger, _ = zap.NewDevelopment(zap.AddCallerSkip(callerSkip))
+var logger, _ = zap.NewDevelopment(zap.AddCallerSkip(wrapperCallerSkip))
 
 func NewLogger(config *LoggerConfiguration) error {
 	var err error
@@ -69,10 +68,11 @@ func NewLogger(config *LoggerConfiguration) error {
 			EncodeDuration: zapcore.SecondsDurationEncoder,
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		},
-		OutputPaths:      config.OutputPaths,
-		ErrorOutputPaths: config.ErrorOutputPaths,
+		OutputPaths: []string{config.OutputPath},
 	}
-	logger, err = zapOpts.Build(zap.AddCallerSkip(callerSkip))
+
+	logger, err = Build(zapOpts, config.Rotate, zap.AddCallerSkip(wrapperCallerSkip))
+
 	if err != nil {
 		return fmt.Errorf("new logger fail,%v", err)
 	}

@@ -1,11 +1,8 @@
 package zap_log_wrapper
 
 import (
-	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
-	"testing"
-
 	"github.com/stretchr/testify/suite"
+	"testing"
 
 	"go.uber.org/zap"
 )
@@ -15,19 +12,19 @@ type loggerTestSuite struct {
 }
 
 func (l *loggerTestSuite) SetupTest() {
+
+}
+
+func (l *loggerTestSuite) TestStdLog() {
 	err := NewLogger(&LoggerConfiguration{
-		Level:            "debug",
-		Development:      false,
-		Encoding:         "json",
-		OutputPaths:      []string{"stdout", "./main.log"},
-		ErrorOutputPaths: []string{"stdout", "./main.log"},
+		Level:       "debug",
+		Development: false,
+		Encoding:    "text",
+		OutputPath:  StdOut,
 	})
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (l *loggerTestSuite) TestDebug() {
 	Debug("this is message", zap.String("key", "value"))
 	Debugf("this is message %s", "test")
 	Debugw("this is message", zap.String("key", "value"))
@@ -37,8 +34,35 @@ func (l *loggerTestSuite) TestDebug() {
 	Warn("this is message", zap.String("key", "value"))
 	Warnf("this is message %s", "test")
 	Warnw("this is message", zap.String("key", "value"))
-	w := zapcore.AddSync(&lumberjack.Logger{})
-	zapcore.NewCore()
+}
+
+func (l *loggerTestSuite) TestFileLog() {
+	err := NewLogger(&LoggerConfiguration{
+		Level:       "debug",
+		Development: false,
+		Encoding:    "text",
+		OutputPath:  "std.log",
+		Rotate: LogRotate{
+			MaxSizeMB:  1,
+			MaxBackups: 3,
+			Compress:   true,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	Debug("this is message", zap.String("key", "value"))
+	Debugf("this is message %s", "test")
+	Debugw("this is message", zap.String("key", "value"))
+	Info("this is message", zap.String("key", "value"))
+	Infof("this is message %s", "test")
+	Infow("this is message", zap.String("key", "value"))
+	Warn("this is message", zap.String("key", "value"))
+	Warnf("this is message %s", "test")
+	Warnw("this is message", zap.String("key", "value"))
+	Errorf("this is message", zap.String("key", "value"))
+
 }
 
 func TestResponseBuffer(t *testing.T) {
